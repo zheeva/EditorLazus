@@ -1,98 +1,205 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI AMV Auto Editor Generator - Ultra Pro</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <title>CyberASCII - Anime Beat-Sync Editor</title>
+    <style>
+        :root {
+            --bg-color: #0a0a12;
+            --container-bg: #121225;
+            --accent-neon: #00ffcc;
+            --accent-pink: #ff0055;
+            --text-color: #e0e0ff;
+            --text-muted: #70708f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--container-bg);
+            border: 2px solid var(--accent-neon);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            text-align: center;
+            color: var(--accent-neon);
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+            margin-bottom: 5px;
+        }
+
+        /* 9:16 Aspect Ratio Preview Container */
+        .preview-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 177.78%; /* 9:16 Aspect Ratio */
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        #outputCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .file-input-wrapper label {
+            display: block;
+            background: #1a1a3a;
+            border: 1px dashed var(--accent-neon);
+            padding: 12px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-wrapper label:hover {
+            background: rgba(0, 255, 204, 0.1);
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        button {
+            background: var(--accent-pink);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 0, 85, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background: #444;
+            color: var(--text-muted);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        #downloadBtn {
+            background: var(--accent-neon);
+            color: #000;
+            box-shadow: 0 4px 10px rgba(0, 255, 204, 0.3);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            background: #1a1a3a;
+            border-radius: 6px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 12px;
+            background: linear-gradient(90deg, var(--accent-pink), var(--accent-neon));
+            transition: width 0.1s linear;
+        }
+
+        .status-text {
+            font-size: 0.8rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* Hidden raw elements used for processing */
+        #hiddenVideo {
+            display: none;
+        }
+    </style>
 </head>
 <body>
+
     <div class="app-container">
-        <aside class="sidebar">
-            <div class="brand">
-                <h2>AI AMV GENERATOR</h2>
-                <span>Senior Video Engine v1.0</span>
-            </div>
-            
-            <div class="control-group">
-                <h3><span class="icon">📁</span> Media Ingest</h3>
-                <div class="upload-btn-wrapper">
-                    <button class="btn">Upload Anime Video</button>
-                    <input type="file" id="video-upload" accept="video/*" />
-                </div>
-                <div class="upload-btn-wrapper">
-                    <button class="btn">Upload Audio/Music</button>
-                    <input type="file" id="audio-upload" accept="audio/*" />
-                </div>
-            </div>
+        <h1>NEON ASCII RENDERER</h1>
+        
+        <div class="preview-wrapper">
+            <canvas id="outputCanvas"></canvas>
+        </div>
 
-            <div class="control-group">
-                <h3><span class="icon">🎨</span> Style & Color Grading</h3>
-                <select id="preset-select">
-                    <option value="ice-red">Ice Red (Blue/White/Glow Red)</option>
-                    <option value="cinematic">Anime Cinematic (High Contrast)</option>
-                    <option value="hyper">Hyper AMV (HDR Look/Sharp)</option>
-                </select>
+        <div class="status-text" id="statusLabel">Siap memproses. Unggah berkas Anda.</div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="control-group">
+            <div class="file-input-wrapper">
+                <label id="videoLabel">📂 Pilih Video Mentah</label>
+                <input type="file" id="videoInput" accept="video/*">
             </div>
 
-            <div class="control-group">
-                <h3><span class="icon">✨</span> Particle Overlays</h3>
-                <select id="particle-select">
-                    <option value="none">None</option>
-                    <option value="snow">Snow Crystal</option>
-                    <option value="sakura">Sakura Petals</option>
-                    <option value="dust">Glowing Dust</option>
-                </select>
+            <div class="file-input-wrapper">
+                <label id="audioLabel">🎵 Pilih Audio Musik</label>
+                <input type="file" id="audioInput" accept="audio/*">
             </div>
 
-            <div class="control-group">
-                <h3><span class="icon">⚡</span> Engine Controls</h3>
-                <button id="generate-btn" class="btn btn-primary" disabled>Generate AI Edit</button>
-                <button id="export-btn" class="btn btn-success" disabled>Export 720p MP4</button>
-            </div>
-
-            <div class="status-panel">
-                <div id="status-text">System Ready. Please upload assets.</div>
-                <div class="progress-bar"><div id="progress-fill"></div></div>
-            </div>
-        </aside>
-
-        <main class="main-content">
-            <section class="preview-window">
-                <div class="video-container">
-                    <canvas id="gl-canvas" width="1280" height="720"></canvas>
-                    <div id="playback-overlay"></div>
-                </div>
-                
-                <div class="player-controls">
-                    <button id="play-btn">Play</button>
-                    <button id="pause-btn">Pause</button>
-                    <span id="time-display">00:00 / 00:30</span>
-                </div>
-            </section>
-
-            <section class="timeline-container">
-                <div class="timeline-headers">
-                    <div class="track-label">Audio Wave</div>
-                    <div class="track-label">Beats / FX Track</div>
-                    <div class="track-label">Velocity / Clips</div>
-                </div>
-                <div class="timeline-tracks">
-                    <div class="track" id="wave-track">
-                        <canvas id="wave-canvas"></canvas>
-                    </div>
-                    <div class="track" id="beat-track">
-                        </div>
-                    <div class="track" id="velocity-track"></div>
-                </div>
-            </section>
-        </main>
+            <button id="startBtn" disabled>MULAI PROSES EDIT</button>
+            <button id="downloadBtn" disabled>UNDUH HASIL VIDEO</button>
+        </div>
     </div>
 
-    <video id="hidden-video" style="display:none;" crossorigin="anonymous"></video>
-    <audio id="hidden-audio" style="display:none;" crossorigin="anonymous"></audio>
+    <video id="hiddenVideo" playsinline muted></video>
 
-    <script src="script.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
