@@ -1,29 +1,28 @@
 # LazusEditor
 
-AI Automatic Video Editor prototype built with HTML5, CSS3, and modern JavaScript. This MVP demonstrates the full pipeline for a voice-over driven video editor:
+AI Automatic Video Editor prototype built with HTML5, CSS3, and modern JavaScript. This MVP demonstrates a modular AI video editing pipeline for voice-over driven workflows.
 
-- audio upload and analysis
-- speech-to-text mock pipeline
-- AI scene segmentation
-- visual matching and storyboard generation
-- subtitle synchronization
-- timeline creation
-- preview rendering
-- export as WebM from the browser
+## Features
 
-## Stack
-
-- Vite + vanilla JavaScript
-- Web Audio API
-- Canvas + MediaRecorder
-- Modular architecture
+- Audio upload and analysis
+- Speech-to-text mock pipeline with timestamped transcript segments
+- AI scene segmentation and storyboard generation
+- Media search via proxy/API abstraction
+- Visual matching and storyboard preview
+- Automatic subtitle generation
+- Timeline creation and preview rendering
+- Downloadable WebM export from browser canvas
+- Local demo backend for testing without external APIs
+- GitHub Pages friendly static build
 
 ## Project structure
 
 ```text
 /src
   /ai
+  /api
   /audio
+  /effects
   /media
   /music
   /renderer
@@ -35,25 +34,80 @@ AI Automatic Video Editor prototype built with HTML5, CSS3, and modern JavaScrip
   config.js
   main.js
   styles.css
+server.js
+vite.config.js
+README.md
+.env.example
+package.json
 ```
 
-## Quick start
+## Local development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local Vite URL in your browser.
+Then open the local Vite URL in your browser.
+
+## Local API proxy
+
+If you want the demo backend running locally:
+
+```bash
+npm run server
+```
+
+Or run both together:
+
+```bash
+npm run dev:all
+```
+
+## GitHub Pages deployment
+
+This app is configured for GitHub Pages with a Vite base path:
+
+- Repository: `zheeva/EditorLazus`
+- GitHub Pages URL: `https://zheeva.github.io/EditorLazus/`
+
+### Steps
+
+1. Push to GitHub
+2. Go to repository settings
+3. Open Pages
+4. Set source to GitHub Actions or deploy static site from branch
+5. Build and publish the Vite output from `dist/`
+
+### Build static app
+
+```bash
+npm run build
+```
+
+The generated site will be in `dist/`.
 
 ## Demo mode
 
-The app runs without external API keys using built-in mock providers and sample footage URLs. You can upload your own audio file or use the default demo voice-over.
+The app runs without external API keys using built-in mock providers and sample visuals. This keeps the UI and editing pipeline testable even before you connect real services.
 
 ## Environment variables
 
-Copy `.env.example` to `.env` and fill in the keys for external providers when you are ready to connect real APIs.
+Copy `.env.example` to `.env` and add your provider keys when ready:
+
+```bash
+cp .env.example .env
+```
+
+Example:
+
+```env
+PEXELS_API_KEY=
+UNSPLASH_ACCESS_KEY=
+FREESOUND_API_KEY=
+OPENAI_API_KEY=
+```
 
 ## Notes
 
-This is an MVP focused on architecture and flow. It is intentionally modular so you can plug in real providers such as Whisper, Pexels, Unsplash, and cloud-based rendering later.
+This is an MVP focused on modular architecture and a usable workflow. It is intentionally easy to extend with real Whisper transcription, real media APIs, and cloud rendering providers.

@@ -7,6 +7,8 @@ import { SubtitleEngine } from './subtitle/SubtitleEngine.js';
 import { TimelineEngine } from './timeline/TimelineEngine.js';
 import { MusicEngine } from './music/MusicEngine.js';
 import { VideoRenderer } from './renderer/VideoRenderer.js';
+import { ProgressUI } from './ui/ProgressUI.js';
+import { ApiClient } from './api/ApiClient.js';
 
 export class App {
   constructor() {
@@ -17,6 +19,8 @@ export class App {
     this.subtitleEngine = new SubtitleEngine();
     this.timelineEngine = new TimelineEngine();
     this.musicEngine = new MusicEngine();
+    this.progressUI = new ProgressUI();
+    this.apiClient = ApiClient;
     this.renderer = null;
     this.currentTimeline = null;
     this.currentAudioMeta = null;
@@ -237,9 +241,14 @@ export class App {
     this.state.uploadName = file.name;
 
     this.setProgress('Generating transcript...', 40);
-    const transcript = await this.speechToText.transcribe(audioMeta, { text: APP_CONFIG.demoVoice });
-    this.renderTranscript(transcript);
+    let transcript;
+    try {
+      transcript = await this.apiClient.getTranscript();
+    } catch (error) {
+      transcript = await this.speechToText.transcribe(audioMeta, { text: APP_CONFIG.demoVoice });
+    }
 
+    this.renderTranscript(transcript);
     await this.buildPipelineFromCurrentState(transcript, audioMeta);
   }
 
@@ -258,10 +267,19 @@ export class App {
     document.getElementById('audioSize').textContent = '3.20 MB';
 
     this.setProgress('Preparing demo timeline...', 25);
-    const transcript = this.speechToText.transcribe(audioMeta, { text: demoText });
-    this.renderTranscript(transcript);
 
-    this.buildPipelineFromCurrentState(transcript, audioMeta);
+    Promise.all([
+      this.apiClient.getHealth().catch(() => ({ status: 'demo' })),
+      this.apiClient.getTranscript().catch(() => this.speechToText.transcribe(audioMeta, { text: demoText }))
+    ]).then(([health, transcript]) => {
+      if (health?.status === 'ok') this.setProgress('Connected to API proxy', 35);
+      this.renderTranscript(transcript);
+      this.buildPipelineFromCurrentState(transcript, audioMeta);
+    }).catch(() => {
+      const transcript = this.speechToText.transcribe(audioMeta, { text: demoText });
+      this.renderTranscript(transcript);
+      this.buildPipelineFromCurrentState(transcript, audioMeta);
+    });
   }
 
   async buildPipelineFromCurrentState(transcriptOverride = null, audioMetaOverride = null) {
@@ -273,8 +291,15 @@ export class App {
 
     const enrichedScenes = await Promise.all(
       scenes.map(async (scene, index) => {
-        const media = await this.mediaProvider.search(scene.visualQuery, { type: 'video' });
-        const visual = media?.[index % media.length]?.url || APP_CONFIG.demoSceneVisuals[index % APP_CONFIG.demoSceneVisuals.length];
+        let media = [];
+        try {
+          const response = await this.apiClient.searchMedia(scene.visualQuery);
+          media = response.items || [];
+        } catch (error) {
+          media = [];
+        }
+
+        const visual = media[index % media.length]?.url || APP_CONFIG.demoSceneVisuals[index % APP_CONFIG.demoSceneVisuals.length];
         const track = this.musicEngine.pickTrack(scene.mood);
 
         return {
@@ -355,7 +380,8 @@ export class App {
 
   renderTranscript(transcript) {
     const container = document.getElementById('transcriptList');
-    container.innerHTML = transcript.segments
+    const segments = transcript?.segments || [];
+    container.innerHTML = segments
       .map((segment) => `
         <div class="transcript-item">
           <strong>${segment.start.toFixed(1)}s</strong>
@@ -381,11 +407,11 @@ export class App {
       .join('');
   }
 
-  renderTimeline(timeline, subtitles) {
+  renderTimeline(timeline) {
     const timelineList = document.getElementById('timelineList');
     const scenes = timeline.scenes || [];
     timelineList.innerHTML = scenes
-      .map((scene, index) => `
+      .map((scene) => `
         <div class="timeline-item">
           <span class="time-pair">${(scene.start || 0).toFixed(1)}s - ${(scene.end || scene.start + scene.duration).toFixed(1)}s</span>
           <span>${scene.title}</span>
@@ -397,12 +423,6 @@ export class App {
   }
 
   setProgress(label, percent) {
-    const progressText = document.getElementById('progressText');
-    const progressPercent = document.getElementById('progressPercent');
-    const progressFill = document.getElementById('progressFill');
-
-    progressText.textContent = label;
-    progressPercent.textContent = `${Math.round(percent)}%`;
-    progressFill.style.width = `${percent}%`;
+    this.progressUI.setProgress(label, percent);
   }
 }

@@ -3,12 +3,21 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "homepage": "https://zheeva.github.io/EditorLazus/",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "server": "node server.js",
+    "dev:all": "concurrently \"npm run server\" \"npm run dev\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
   },
   "devDependencies": {
+    "concurrently": "^9.0.1",
     "vite": "^5.4.10"
   }
 }

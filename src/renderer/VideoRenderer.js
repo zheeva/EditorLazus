@@ -7,7 +7,6 @@ export class VideoRenderer {
     this.previewImages = new Map();
     this.currentTime = 0;
     this.isPlaying = false;
-    this.finished = false;
     this.sceneIndex = 0;
   }
 
@@ -19,18 +18,18 @@ export class VideoRenderer {
 
   startPreview() {
     this.isPlaying = true;
-    const render = () => {
+    const tick = () => {
       if (!this.isPlaying) return;
       this.drawFrame(this.currentTime);
       this.currentTime += 1 / this.timeline.fps;
       if (this.currentTime >= this.timeline.duration) {
         this.currentTime = 0;
       }
-      this.animationFrame = requestAnimationFrame(render);
+      this.animationFrame = requestAnimationFrame(tick);
     };
 
     if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
-    this.animationFrame = requestAnimationFrame(render);
+    this.animationFrame = requestAnimationFrame(tick);
   }
 
   stopPreview() {
@@ -63,8 +62,8 @@ export class VideoRenderer {
     }
 
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, 'rgba(2,6,23,0.15)');
-    gradient.addColorStop(1, 'rgba(2,6,23,0.75)');
+    gradient.addColorStop(0, 'rgba(2,6,23,0.18)');
+    gradient.addColorStop(1, 'rgba(2,6,23,0.8)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
