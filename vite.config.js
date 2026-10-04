@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 const repoName = 'EditorLazus';
 
 export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? `/${repoName}/` : '/',
+  base: './',
   server: {
     host: '0.0.0.0',
     port: 5173,
